@@ -57,5 +57,231 @@ app.get('/pedidos', async (req, res) => {
     }
 });
 
+app.post('/usuarios', async (req, res) => {
+    const { nombre, email } = req.body;
+
+    if (!nombre || !email) {
+        return res.status(400).json({
+            error: 'Nombre y email son obligatorios'
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO usuarios (nombre, email) VALUES ($1, $2) RETURNING *',
+            [nombre, email]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al crear usuario' });
+    }
+});
+
+app.put('/usuarios/:id', async (req, res) => {
+    const { nombre, email } = req.body;
+    const { id } = req.params;
+
+    if (!nombre || !email) {
+        return res.status(400).json({
+            error: 'Nombre y email son obligatorios'
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE usuarios SET nombre = $1, email = $2 WHERE id = $3 RETURNING *',
+            [nombre, email, id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al actualizar usuario' });
+    }
+});
+
+app.delete('/usuarios/:id', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'DELETE FROM usuarios WHERE id = $1 RETURNING *',
+            [req.params.id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        res.json({
+            mensaje: 'Usuario eliminado',
+            usuario: result.rows[0]
+        });
+    } catch (error) {
+        if (error.code === '23503') {
+            return res.status(409).json({
+                error: 'No se puede eliminar porque tiene pedidos asociados'
+            });
+        }
+
+        console.error(error);
+        res.status(500).json({ error: 'Error al eliminar usuario' });
+    }
+});
+
+app.post('/productos', async (req, res) => {
+    const { nombre, precio } = req.body;
+
+    if (!nombre || precio === undefined || !Number.isFinite(Number(precio)) || Number(precio) < 0) {
+        return res.status(400).json({ error: 'Nombre y precio válido son obligatorios' });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO productos (nombre, precio) VALUES ($1, $2) RETURNING *',
+            [nombre, precio]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al crear producto' });
+    }
+});
+
+app.put('/productos/:id', async (req, res) => {
+    const { nombre, precio } = req.body;
+
+    if (!nombre || precio === undefined || !Number.isFinite(Number(precio)) || Number(precio) < 0) {
+        return res.status(400).json({ error: 'Nombre y precio válido son obligatorios' });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE productos SET nombre = $1, precio = $2 WHERE id = $3 RETURNING *',
+            [nombre, precio, req.params.id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Producto no encontrado' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al actualizar producto' });
+    }
+});
+
+app.delete('/productos/:id', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'DELETE FROM productos WHERE id = $1 RETURNING *',
+            [req.params.id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Producto no encontrado' });
+        }
+
+        res.json({ mensaje: 'Producto eliminado', producto: result.rows[0] });
+    } catch (error) {
+        if (error.code === '23503') {
+            return res.status(409).json({
+                error: 'No se puede eliminar un producto asociado a pedidos'
+            });
+        }
+
+        console.error(error);
+        res.status(500).json({ error: 'Error al eliminar producto' });
+    }
+});
+
+app.post('/pedidos', async (req, res) => {
+    const { usuario_id, producto_id, cantidad } = req.body;
+
+    if (![usuario_id, producto_id, cantidad].every(
+        valor => Number.isInteger(Number(valor)) && Number(valor) > 0
+    )) {
+        return res.status(400).json({
+            error: 'usuario_id, producto_id y cantidad deben ser enteros positivos'
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO pedidos (usuario_id, producto_id, cantidad) VALUES ($1, $2, $3) RETURNING *',
+            [usuario_id, producto_id, cantidad]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        if (error.code === '23503') {
+            return res.status(400).json({
+                error: 'El usuario o producto indicado no existe'
+            });
+        }
+
+        console.error(error);
+        res.status(500).json({ error: 'Error al crear pedido' });
+    }
+});
+
+app.put('/pedidos/:id', async (req, res) => {
+    const { usuario_id, producto_id, cantidad } = req.body;
+
+    if (![usuario_id, producto_id, cantidad].every(
+        valor => Number.isInteger(Number(valor)) && Number(valor) > 0
+    )) {
+        return res.status(400).json({
+            error: 'usuario_id, producto_id y cantidad deben ser enteros positivos'
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE pedidos SET usuario_id = $1, producto_id = $2, cantidad = $3 WHERE id = $4 RETURNING *',
+            [usuario_id, producto_id, cantidad, req.params.id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Pedido no encontrado' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        if (error.code === '23503') {
+            return res.status(400).json({
+                error: 'El usuario o producto indicado no existe'
+            });
+        }
+
+        console.error(error);
+        res.status(500).json({ error: 'Error al actualizar pedido' });
+    }
+});
+
+app.delete('/pedidos/:id', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'DELETE FROM pedidos WHERE id = $1 RETURNING *',
+            [req.params.id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'Pedido no encontrado' });
+        }
+
+        res.json({ mensaje: 'Pedido eliminado', pedido: result.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al eliminar pedido' });
+    }
+});
+
+
 module.exports = app;
 
