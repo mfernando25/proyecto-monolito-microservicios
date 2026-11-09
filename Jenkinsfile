@@ -12,6 +12,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                sh 'rm -rf reports && mkdir -p reports'
             }
         }
 
@@ -29,7 +30,8 @@ pipeline {
                     steps {
                         dir('monolito') {
                             sh 'docker compose up -d --build'
-                            sh 'docker compose exec -T app npm test'
+
+                            sh 'docker compose exec -T app sh -c "JEST_JUNIT_OUTPUT_FILE=/app/junit.xml npm test -- --reporters=default --reporters=jest-junit"'
                         }
                     }
                     post {
@@ -40,6 +42,7 @@ pipeline {
                         }
                         always {
                             dir('monolito') {
+                                sh 'docker compose cp app:/app/junit.xml ../reports/monolito.xml || true'
                                 sh 'docker compose down -v || true'
                             }
                         }
@@ -70,17 +73,17 @@ pipeline {
                                     done
 
                                     if [ "$ready" -ne 1 ]; then
-                                        echo "La API $service no responde en el puerto $port"
+                                        echo "La API $service no responde"
                                         exit 1
                                     fi
-
-                                    echo "API $service disponible"
                                 done
                             '''
 
-                            sh 'docker compose exec -T usuarios npm test'
-                            sh 'docker compose exec -T productos npm test'
-                            sh 'docker compose exec -T pedidos npm test'
+                            sh 'docker compose exec -T usuarios sh -c "JEST_JUNIT_OUTPUT_FILE=/app/junit.xml npm test -- --reporters=default --reporters=jest-junit"'
+
+                            sh 'docker compose exec -T productos sh -c "JEST_JUNIT_OUTPUT_FILE=/app/junit.xml npm test -- --reporters=default --reporters=jest-junit"'
+
+                            sh 'docker compose exec -T pedidos sh -c "JEST_JUNIT_OUTPUT_FILE=/app/junit.xml npm test -- --reporters=default --reporters=jest-junit"'
                         }
                     }
                     post {
@@ -91,6 +94,9 @@ pipeline {
                         }
                         always {
                             dir('microservicios') {
+                                sh 'docker compose cp usuarios:/app/junit.xml ../reports/usuarios.xml || true'
+                                sh 'docker compose cp productos:/app/junit.xml ../reports/productos.xml || true'
+                                sh 'docker compose cp pedidos:/app/junit.xml ../reports/pedidos.xml || true'
                                 sh 'docker compose down -v || true'
                             }
                         }
@@ -102,6 +108,7 @@ pipeline {
 
     post {
         always {
+            junit testResults: 'reports/**/*.xml', allowEmptyResults: true
             echo 'Pipeline finalizado.'
         }
     }
