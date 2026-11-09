@@ -1,0 +1,44 @@
+services:
+  docker:
+    image: docker:dind
+    container_name: jenkins-docker
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    volumes:
+      - jenkins_docker_certs:/certs/client
+      - jenkins_home:/var/jenkins_home
+      - docker_data:/var/lib/docker
+    command: ["--storage-driver=overlay2"]
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jenkins-with-docker:local
+    container_name: jenkins
+    restart: unless-stopped
+    depends_on:
+      docker:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_CERT_PATH: /certs/client
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - jenkins_docker_certs:/certs/client:ro
+
+volumes:
+  jenkins_home:
+  jenkins_docker_certs:
+  docker_data:
