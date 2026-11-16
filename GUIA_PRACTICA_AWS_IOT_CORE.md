@@ -134,6 +134,60 @@ No incluir credenciales temporales, tokens, claves privadas ni certificados priv
 
 ---
 
+## 4.1 Crear el directorio de configuración
+```bash
+mkdir -p ~/.aws
+chmod 700 ~/.aws
+```
+
+### 3.2. Guardar las credenciales temporales
+
+```bash
+nano ~/.aws/credentials
+```
+
+Contenido:
+
+```ini
+[default]
+aws_access_key_id = <ACCESS_KEY_ID>
+aws_secret_access_key = <SECRET_ACCESS_KEY>
+aws_session_token = <SESSION_TOKEN>
+```
+
+Sustituir los marcadores por los valores proporcionados por Vocareum. Guardar con `Ctrl + O`, Enter y salir con `Ctrl + X`.
+
+### 3.3. Configurar región y formato de salida
+
+```bash
+nano ~/.aws/config
+```
+
+Contenido:
+
+```ini
+[default]
+region = us-east-1
+output = json
+```
+
+Aplicar permisos:
+
+```bash
+chmod 600 ~/.aws/credentials
+chmod 600 ~/.aws/config
+```
+
+### 3.4. Verificar configuración y autenticación
+
+```bash
+aws configure list
+aws sts get-caller-identity --region us-east-1
+```
+
+La segunda consulta debe devolver la identidad de la sesión de Learner Lab. Si aparece un error de autenticación, revisar la vigencia y los valores copiados desde Vocareum.
+
+
 ## 5. Crear la política de AWS IoT Core
 
 ### 5.1. Abrir AWS IoT Core
