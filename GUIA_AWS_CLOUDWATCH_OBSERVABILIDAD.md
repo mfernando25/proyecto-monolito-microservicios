@@ -185,11 +185,7 @@ Entrar en la carpeta de microservicios:
 cd ~/proyecto-monolito-microservicios/microservicios
 ```
 
-Esta actividad utiliza Docker Compose, no Minikube/Kubernetes. Para detener Minikube y los port-forward anteriores:
-
-```bash
-bash iniciar.sh stop
-```
+Esta actividad ejecuta los microservicios localmente mediante Docker Compose.
 
 ### 5.1. Publicar los puertos locales
 
@@ -209,7 +205,7 @@ pedidos:
     - "3003:3003"
 ```
 
-El puerto a la izquierda es el puerto local de WSL; el de la derecha es el puerto del contenedor. En esta actividad se conservan los puertos originales de Docker Compose (3001, 3002 y 3003). Los puertos 3101, 3102 y 3103 correspondían al acceso anterior mediante Kubernetes y `kubectl port-forward`; no se utilizan en esta ejecución con Docker Compose.
+El puerto a la izquierda es el puerto local de WSL; el de la derecha es el puerto del contenedor.
 
 ### 5.2. Construir y levantar los servicios
 
