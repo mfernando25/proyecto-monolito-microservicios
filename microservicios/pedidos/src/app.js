@@ -1,5 +1,13 @@
 const express = require('express');
 const pool = require('./db');
+const {
+    CloudWatchLogsClient,
+    PutLogEventsCommand
+} = require('@aws-sdk/client-cloudwatch-logs');
+
+const cloudWatchLogs = new CloudWatchLogsClient({
+    region: process.env.AWS_REGION || 'us-east-1'
+});
 
 const app = express();
 
@@ -20,6 +28,38 @@ async function validarReferencias(usuarioId, productoId) {
     return true;
 }
 
+
+app.use((req, res, next) => {
+    const startTime = Date.now();
+
+    res.on('finish', () => {
+        const logGroupName = process.env.CLOUDWATCH_LOG_GROUP;
+        const logStreamName = process.env.CLOUDWATCH_LOG_STREAM;
+
+        if (!logGroupName || !logStreamName) return;
+
+        const logEvent = {
+            timestamp: Date.now(),
+            message: JSON.stringify({
+                timestamp: new Date().toISOString(),
+                method: req.method,
+                path: req.originalUrl,
+                statusCode: res.statusCode,
+                durationMs: Date.now() - startTime
+            })
+        };
+
+        cloudWatchLogs.send(new PutLogEventsCommand({
+            logGroupName,
+            logStreamName,
+            logEvents: [logEvent]
+        })).catch(error => {
+            console.error('Error enviando registro a CloudWatch:', error.message);
+        });
+    });
+
+    next();
+});
 
 app.use(express.json());
 
