@@ -198,18 +198,18 @@ En `docker-compose.yml`, los servicios deben exponer los puertos de host usados 
 ```yaml
 usuarios:
   ports:
-    - "3101:3001"
+    - "3001:3001"
 
 productos:
   ports:
-    - "3102:3002"
+    - "3002:3002"
 
 pedidos:
   ports:
-    - "3103:3003"
+    - "3003:3003"
 ```
 
-El puerto a la izquierda es el puerto local de WSL; el de la derecha es el puerto del contenedor.
+El puerto a la izquierda es el puerto local de WSL; el de la derecha es el puerto del contenedor. En esta actividad se conservan los puertos originales de Docker Compose (3001, 3002 y 3003). Los puertos 3101, 3102 y 3103 correspondían al acceso anterior mediante Kubernetes y `kubectl port-forward`; no se utilizan en esta ejecución con Docker Compose.
 
 ### 5.2. Construir y levantar los servicios
 
@@ -225,9 +225,9 @@ Puertos locales:
 
 | Servicio | URL |
 |---|---|
-| Usuarios | `http://127.0.0.1:3101` |
-| Productos | `http://127.0.0.1:3102` |
-| Pedidos | `http://127.0.0.1:3103` |
+| Usuarios | `http://127.0.0.1:3001` |
+| Productos | `http://127.0.0.1:3002` |
+| Pedidos | `http://127.0.0.1:3003` |
 
 ---
 
@@ -419,19 +419,19 @@ Todas las pruebas se realizan contra el servicio Pedidos, publicado localmente e
 ### 8.1. Health check
 
 ```bash
-curl -sS http://127.0.0.1:3103/health | python3 -m json.tool
+curl -sS http://127.0.0.1:3003/health | python3 -m json.tool
 ```
 
 ### 8.2. GET: consultar pedidos
 
 ```bash
-curl -sS http://127.0.0.1:3103/pedidos | python3 -m json.tool
+curl -sS http://127.0.0.1:3003/pedidos | python3 -m json.tool
 ```
 
 ### 8.3. POST: crear un pedido
 
 ```bash
-curl -sS -X POST http://127.0.0.1:3103/pedidos \
+curl -sS -X POST http://127.0.0.1:3003/pedidos \
   -H "Content-Type: application/json" \
   -d '{"usuario_id":3,"producto_id":3,"cantidad":2}' \
   | python3 -m json.tool
@@ -444,7 +444,7 @@ La API devuelve el pedido creado y su identificador. Anotar el ID devuelto para 
 Reemplazar `<ID_PEDIDO>` por el identificador devuelto por POST:
 
 ```bash
-curl -sS -X PUT http://127.0.0.1:3103/pedidos/<ID_PEDIDO> \
+curl -sS -X PUT http://127.0.0.1:3003/pedidos/<ID_PEDIDO> \
   -H "Content-Type: application/json" \
   -d '{"usuario_id":3,"producto_id":3,"cantidad":5}' \
   | python3 -m json.tool
@@ -453,7 +453,7 @@ curl -sS -X PUT http://127.0.0.1:3103/pedidos/<ID_PEDIDO> \
 ### 8.5. DELETE: eliminar el pedido de prueba
 
 ```bash
-curl -sS -X DELETE http://127.0.0.1:3103/pedidos/<ID_PEDIDO> \
+curl -sS -X DELETE http://127.0.0.1:3003/pedidos/<ID_PEDIDO> \
   | python3 -m json.tool
 ```
 
@@ -462,7 +462,7 @@ curl -sS -X DELETE http://127.0.0.1:3103/pedidos/<ID_PEDIDO> \
 La cantidad debe ser un entero positivo. La siguiente solicitud usa cantidad cero y no debe insertar un pedido:
 
 ```bash
-curl -sS -X POST http://127.0.0.1:3103/pedidos \
+curl -sS -X POST http://127.0.0.1:3003/pedidos \
   -H "Content-Type: application/json" \
   -d '{"usuario_id":3,"producto_id":3,"cantidad":0}' \
   | python3 -m json.tool
