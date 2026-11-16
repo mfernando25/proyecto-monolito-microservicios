@@ -414,7 +414,7 @@ docker compose ps
 
 ## 8. Probar la API con curl
 
-Todas las pruebas se realizan contra el servicio Pedidos, publicado localmente en el puerto 3103.
+Todas las pruebas se realizan contra el servicio Pedidos, publicado localmente en el puerto 3003.
 
 ### 8.1. Health check
 
